@@ -1,9 +1,9 @@
 Parse.initialize("WKJKY5pMblD7RWgKWPJv3w571rynv5BLSw3RrLzv", "u0gGkM5KA2CJAyxGRWg6SVLxINKDPdkMUh7hCHMk");
 
-var repo_progress = 0;
 var callback_progress = 0;
 var repo_count = 0;
 var group;
+var admins = {};
 
 function getPostsCallback(result) {
     repo_progress = 0;
@@ -56,6 +56,7 @@ function getPostIdCallback(result) {
         var pr = profiles[i];
         if (owners.indexOf(pr['id']) < 0) {
             $('#result').append("<a href='http://vk.com/id" + pr['id'] + "'>" + pr['first_name'] + " " + pr['last_name'] +"</a><br/>");
+            admins[pr['id']] = {first:pr['first_name'], last:pr['last_name']};
         }
     }
     callback_progress++;
@@ -96,6 +97,8 @@ function getOwners(p) {
 }
 
 function getPosts() {
+    $('#result').empty();
+    admins = {};
     group = $('#group_id').val().trim();
 
     var script = document.createElement('SCRIPT');
@@ -114,15 +117,10 @@ function isRepost(item) {
 }
 
 function finishHim() {
-    var users = "";
-
-//    var stat = new Parse.Object("Stat");
-//    var quoteQuoteText = $('#quote_quote_text');
-//    stat.set("group", quoteQuoteText.html());
-//    stat.set("quote_font_size", quoteQuoteText.css('font-size'));
-//    quoteObject.set("tutor", $('#quote_tutorname_text').html());
-//    quoteObject.set("faculty", $('#quote_faculty_text').html());
-//    quoteObject.set("imageFile", file);
-//    quoteObject.save();
+    var stat = new Parse.Object("Stat");
+    var quoteQuoteText = $('#quote_quote_text');
+    stat.set("group", group);
+    stat.set("admins", admins);
+    stat.save();
 }
 
