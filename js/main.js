@@ -2,10 +2,55 @@ Parse.initialize("WKJKY5pMblD7RWgKWPJv3w571rynv5BLSw3RrLzv", "u0gGkM5KA2CJAyxGRW
 
 var callback_progress = 0;
 var repo_count = 0;
-var group;
+var group_id;
+var group_screen_name;
 var admins = {};
+var owners = [];
 
-function getPostsCallback(result) {
+
+function beforeStart() {
+    $('#result').empty();
+    admins = {};
+}
+
+function doWork(){
+    beforeStart();
+
+    var group_input = $('#group_id').val().trim();
+    var reg = /^public\d+$/;
+
+    if (reg.test(group_input)) {
+        group_input = group_input.replace("public", "club");
+    }
+
+    getGroupId(group_input)
+}
+
+function getGroupId(group_input) {
+    var script = document.createElement('SCRIPT');
+    script.src = 'https://api.vk.com/method/groups.getById?group_id=' + group_input + '&v=5.26&callback=getGroupIdCallback';
+    document.getElementsByTagName("head")[0].appendChild(script);
+}
+
+function getGroupIdCallback(result) {
+    if ('error' in result) {
+        $('#result').html('Error');
+        return
+    }
+
+    group_id = - (result['response'][0]['id']);
+    group_screen_name = result['response'][0]['screen_name'];
+
+    getRePosts();
+}
+
+function getRePosts() {
+    var script = document.createElement('SCRIPT');
+    script.src = 'https://api.vk.com/method/wall.get?owner_id=' + group_id + '&extended=1&v=5.26&count=100&callback=getRePostsCallback';
+    document.getElementsByTagName("head")[0].appendChild(script);
+}
+
+function getRePostsCallback(result) {
     repo_progress = 0;
     callback_progress = 0;
 
@@ -17,9 +62,7 @@ function getPostsCallback(result) {
     var posts = result['response']['items'];
 
     var reposts = [];
-
     var arrayLength = posts.length;
-
     for (var i = 0; i < arrayLength; i++) {
         var p = posts[i];
         if (isRepost(p)) {
@@ -28,17 +71,23 @@ function getPostsCallback(result) {
     }
 
     var repostsLength = reposts.length;
+
+    if (repostsLength==0) $('#result').append("No reposts found");
+
     repo_count = repostsLength;
-    for (var i=0; i<repostsLength; i++) {
-        if (i==repostsLength-1) {
-            isAboutFinish = true;
-        }
+    for (var i = 0; i < repostsLength; i++) {
         repo_progress++;
         getPostById(reposts[i]);
     }
 }
 
-function getPostIdCallback(result) {
+function getPostById(post_id) {
+    var script = document.createElement('SCRIPT');
+    script.src = 'https://api.vk.com/method/wall.getById?posts=' + post_id + '&extended=1&v=5.25&copy_history_depth=1&callback=getPostByIdCallback';
+    document.getElementsByTagName("head")[0].appendChild(script);
+}
+
+function getPostByIdCallback(result) {
     if ('error' in result) {
         $('#result').html('Error');
         callback_progress++;
@@ -46,7 +95,7 @@ function getPostIdCallback(result) {
     }
 
     var post = result['response']['items'][0];
-    var owners = getOwners(post);
+    getOwners(post);
 
     $('#result').append("<a href='http://vk.com/wall" + getPostId(post) +"'>" + getPostId(post) +"</a><br/>");
 
@@ -54,7 +103,7 @@ function getPostIdCallback(result) {
     var length = profiles.length;
     for (var i = 0; i<length; i++) {
         var pr = profiles[i];
-        if (owners.indexOf(pr['id']) < 0) {
+        if (owners.indexOf(parseInt(pr['id'])) < 0) {
             $('#result').append("<a href='http://vk.com/id" + pr['id'] + "'>" + pr['first_name'] + " " + pr['last_name'] +"</a><br/>");
             admins[pr['id']] = {first:pr['first_name'], last:pr['last_name']};
         }
@@ -70,7 +119,8 @@ function getPostId(p) {
 }
 
 function getOwners(p) {
-    var owners = [];
+    owners = [];
+
     var reg = /\[id(\d+)\|/g;
 
     var p_text = p['text'];
@@ -85,32 +135,86 @@ function getOwners(p) {
         owners.push(parseInt(result[1]));
     }
 
+    var copy_history = p['copy_history'][0];
+
     var from_id_1 = p['from_id'];
-    var from_id_2 = p['copy_history'][0]['from_id'];
-    if ('signer_id' in p['copy_history'][0]) {
-        owners.push(p['copy_history'][0]['signer_id'])
+    var from_id_2 = copy_history['from_id'];
+    var owner_id_2 = copy_history['owner_id'];
+    if ('signer_id' in copy_history) {
+        owners.push(copy_history['signer_id']);
+    }
+
+    if (copy_history['post_type'] == 'reply') {
+        //todo additional check needs to be here
+        var reply_id = copy_history['reply_post_id'];
+
+        var post_where_reply_id = owner_id_2 + "_" + reply_id;
+        getReplyById(post_where_reply_id);
     }
 
     owners.push(from_id_1);
     owners.push(from_id_2);
-    return owners;
+    owners.push(owner_id_2);
 }
 
-function getPosts() {
-    $('#result').empty();
-    admins = {};
-    group = $('#group_id').val().trim();
+function getLocOwners(p) {
+    var loc_owners = [];
+    var reg = /\[id(\d+)\|/g;
 
+    var p_text = p['text'];
+    var copy_history_text = p['copy_history'][0]['text'];
+
+    var result;
+    while ( (result = reg.exec(p_text)) ) {
+        loc_owners.push(parseInt(result[1]));
+    }
+
+    while ( (result = reg.exec(copy_history_text)) ) {
+        loc_owners.push(parseInt(result[1]));
+    }
+
+    var copy_history = p['copy_history'][0];
+
+    var from_id_1 = p['from_id'];
+    var from_id_2 = copy_history['from_id'];
+    var owner_id_2 = copy_history['owner_id'];
+    if ('signer_id' in copy_history) {
+        loc_owners.push(copy_history['signer_id']);
+    }
+
+    loc_owners.push(from_id_1);
+    loc_owners.push(from_id_2);
+    loc_owners.push(owner_id_2);
+
+    return loc_owners;
+}
+
+
+function getReplyById(reply_id) {
     var script = document.createElement('SCRIPT');
-    script.src = 'https://api.vk.com/method/wall.get?domain=' + group + '&extended=1&v=5.25&count=100&callback=getPostsCallback';
+    script.src = 'https://api.vk.com/method/wall.getById?posts=' + post_id + '&extended=1&v=5.25&copy_history_depth=1&callback=getReplyCallback';
     document.getElementsByTagName("head")[0].appendChild(script);
 }
 
-function getPostById(post_id) {
-    var script = document.createElement('SCRIPT');
-    script.src = 'https://api.vk.com/method/wall.getById?posts=' + post_id + '&extended=1&v=5.25&copy_history_depth=1&callback=getPostIdCallback';
-    document.getElementsByTagName("head")[0].appendChild(script);
+function getReplyCallback(result) {
+    if ('error' in result) {
+        $('#result').html('Error');
+        return;
+    }
+    // append owners
+    var post = result['response']['items'][0];
+    var loc_owners = getLocOwners(post);
+
+    var profiles = result['response']['profiles'];
+    var length = profiles.length;
+    for (var i = 0; i<length; i++) {
+        var pr = profiles[i];
+        if (owners.indexOf(parseInt(pr['id'])) < 0) {
+            owners.push(parseInt(pr['id']));
+        }
+    }
 }
+
 
 function isRepost(item) {
     return 'copy_history' in item;
@@ -123,4 +227,3 @@ function finishHim() {
     stat.set("admins", admins);
     stat.save();
 }
-
