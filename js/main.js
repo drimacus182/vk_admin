@@ -1,4 +1,4 @@
-Parse.initialize("WKJKY5pMblD7RWgKWPJv3w571rynv5BLSw3RrLzv", "u0gGkM5KA2CJAyxGRWg6SVLxINKDPdkMUh7hCHMk");
+//Parse.initialize("WKJKY5pMblD7RWgKWPJv3w571rynv5BLSw3RrLzv", "u0gGkM5KA2CJAyxGRWg6SVLxINKDPdkMUh7hCHMk");
 
 var callback_progress = 0;
 var repo_count = 0;
@@ -6,6 +6,9 @@ var group_id;
 var group_screen_name;
 var admins = {};
 var owners = [];
+var concatResult = [];
+var index = 0;
+var closureIndex = 0;
 
 
 function beforeStart() {
@@ -13,7 +16,7 @@ function beforeStart() {
     admins = {};
 }
 
-function doWork(){
+function doWork() {
     beforeStart();
 
     var group_input = $('#group_id').val().trim();
@@ -54,16 +57,27 @@ function getGroupIdCallback(result) {
         return
     }
 
-    group_id = - (result['response'][0]['id']);
+    group_id = -(result['response'][0]['id']);
     group_screen_name = result['response'][0]['screen_name'];
 
     getRePosts();
 }
 
 function getRePosts() {
-    var script = document.createElement('SCRIPT');
-    script.src = 'https://api.vk.com/method/wall.get?owner_id=' + group_id + '&extended=1&v=5.26&count=100&callback=getRePostsCallback';
-    document.getElementsByTagName("head")[0].appendChild(script);
+    for (; index < 50; index++) {
+        var script = document.createElement('SCRIPT');
+        script.src = 'https://api.vk.com/method/wall.get?owner_id=' + group_id + '&offset=' + index * 100 + '&extended=1&v=5.26&count=100&callback=concatCallback';
+        document.getElementsByTagName("head")[0].appendChild(script);
+    }
+}
+
+function concatCallback(result) {
+    concatResult = concatResult.concat(result.response.items);
+    closureIndex++;
+    if (closureIndex === 50) {
+        result.response.items = concatResult;
+        getRePostsCallback(result);
+    }
 }
 
 function getRePostsCallback(result) {
@@ -88,7 +102,7 @@ function getRePostsCallback(result) {
 
     var repostsLength = reposts.length;
 
-    if (repostsLength==0) $('#result').append("No reposts found");
+    if (repostsLength == 0) $('#result').append("No reposts found");
 
     repo_count = repostsLength;
     for (var i = 0; i < repostsLength; i++) {
@@ -113,21 +127,24 @@ function getPostByIdCallback(result) {
     var post = result['response']['items'][0];
     getOwners(post);
 
-    $('#result').append("<a href='http://vk.com/wall" + getPostId(post) +"'>" + getPostId(post) +"</a><br/>");
+    $('#result').append("<a href='http://vk.com/wall" + getPostId(post) + "'>" + getPostId(post) + "</a><br/>");
 
     var profiles = result['response']['profiles'];
     var length = profiles.length;
-    for (var i = 0; i<length; i++) {
+    for (var i = 0; i < length; i++) {
         var pr = profiles[i];
         if (owners.indexOf(parseInt(pr['id'])) < 0) {
-            $('#result').append("<a href='http://vk.com/id" + pr['id'] + "'>" + pr['first_name'] + " " + pr['last_name'] +"</a><br/>");
-            admins[pr['id']] = {first:pr['first_name'], last:pr['last_name']};
+            $('#result').append("<a href='http://vk.com/id" + pr['id'] + "'>" + pr['first_name'] + " " + pr['last_name'] + "</a><br/>");
+            admins[pr['id']] = {
+                first: pr['first_name'],
+                last: pr['last_name']
+            };
         }
     }
     callback_progress++;
-    if (callback_progress >= repo_count) {
+    /*if (callback_progress >= repo_count) {
         finishHim()
-    }
+    }*/
 }
 
 function getPostId(p) {
@@ -143,11 +160,11 @@ function getOwners(p) {
     var copy_history_text = p['copy_history'][0]['text'];
 
     var result;
-    while ( (result = reg.exec(p_text)) ) {
+    while ((result = reg.exec(p_text))) {
         owners.push(parseInt(result[1]));
     }
 
-    while ( (result = reg.exec(copy_history_text)) ) {
+    while ((result = reg.exec(copy_history_text))) {
         owners.push(parseInt(result[1]));
     }
 
@@ -181,11 +198,11 @@ function getLocOwners(p) {
     var copy_history_text = p['copy_history'][0]['text'];
 
     var result;
-    while ( (result = reg.exec(p_text)) ) {
+    while ((result = reg.exec(p_text))) {
         loc_owners.push(parseInt(result[1]));
     }
 
-    while ( (result = reg.exec(copy_history_text)) ) {
+    while ((result = reg.exec(copy_history_text))) {
         loc_owners.push(parseInt(result[1]));
     }
 
@@ -223,7 +240,7 @@ function getReplyCallback(result) {
 
     var profiles = result['response']['profiles'];
     var length = profiles.length;
-    for (var i = 0; i<length; i++) {
+    for (var i = 0; i < length; i++) {
         var pr = profiles[i];
         if (owners.indexOf(parseInt(pr['id'])) < 0) {
             owners.push(parseInt(pr['id']));
