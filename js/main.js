@@ -1,4 +1,4 @@
-//Parse.initialize("WKJKY5pMblD7RWgKWPJv3w571rynv5BLSw3RrLzv", "u0gGkM5KA2CJAyxGRWg6SVLxINKDPdkMUh7hCHMk");
+Parse.initialize("WKJKY5pMblD7RWgKWPJv3w571rynv5BLSw3RrLzv", "u0gGkM5KA2CJAyxGRWg6SVLxINKDPdkMUh7hCHMk");
 
 var callback_progress = 0;
 var repo_count = 0;
@@ -142,9 +142,9 @@ function getPostByIdCallback(result) {
         }
     }
     callback_progress++;
-    /*if (callback_progress >= repo_count) {
+    if (callback_progress >= repo_count) {
         finishHim()
-    }*/
+    }
 }
 
 function getPostId(p) {
