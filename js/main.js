@@ -17,6 +17,18 @@ function doWork(){
     beforeStart();
 
     var group_input = $('#group_id').val().trim();
+    var reg0 = /^.*vk\.com\/(\w+)\/?/;
+    if (reg0.test(group_input)) {
+        var arr = group_input.match(reg0);
+        if (arr.length <= 1) {
+            displayError();
+            return;
+        }
+        group_input = arr[1];
+    }
+
+    // One more transformation
+
     var reg = /^public\d+$/;
 
     if (reg.test(group_input)) {
@@ -24,6 +36,10 @@ function doWork(){
     }
 
     getGroupId(group_input)
+}
+
+function displayError() {
+    $('#result').html('Error');
 }
 
 function getGroupId(group_input) {
@@ -34,7 +50,7 @@ function getGroupId(group_input) {
 
 function getGroupIdCallback(result) {
     if ('error' in result) {
-        $('#result').html('Error');
+        displayError();
         return
     }
 
