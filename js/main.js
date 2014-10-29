@@ -48,7 +48,7 @@ function getPostIdCallback(result) {
     var post = result['response']['items'][0];
     var owners = getOwners(post);
 
-    $('#result').append("<a href='http://vk.com/kpi_live?w=wall" + getPostId(post) +"'>" + getPostId(post) +"</a><br/>");
+    $('#result').append("<a href='http://vk.com/wall" + getPostId(post) +"'>" + getPostId(post) +"</a><br/>");
 
     var profiles = result['response']['profiles'];
     var length = profiles.length;
@@ -102,7 +102,7 @@ function getPosts() {
     group = $('#group_id').val().trim();
 
     var script = document.createElement('SCRIPT');
-    script.src = 'https://api.vk.com/method/wall.get?domain=' + group + '&extended=1&v=5.25&count=30&callback=getPostsCallback';
+    script.src = 'https://api.vk.com/method/wall.get?domain=' + group + '&extended=1&v=5.25&count=100&callback=getPostsCallback';
     document.getElementsByTagName("head")[0].appendChild(script);
 }
 
