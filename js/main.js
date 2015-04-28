@@ -65,16 +65,22 @@
                 var reposts = result['response']['items']
                     .filter(isRepost);
 
-                reposts.map(function (r) {
-                    wallGetThisRepost(r);
-                });
-                if (reposts.length == 0) $('#result').append("No reposts found");
+                if (reposts.length == 0) {
+                    $('#result').append("No reposts found");
+                    $('#loading_img').addClass('nodisplay');
+                }
+                async.eachLimit(reposts, 5, wallGetThisRepost, finishHim);
             });
+    }
+
+    function finishHim(err) {
+        $('#result').append("Done");
+        $('#loading_img').addClass('nodisplay');
     }
 
 //async.until() //todo further use closure for communication between functions
 
-    function wallGetThisRepost(repost) {
+    function wallGetThisRepost(repost, callback) {
         var orig = repost.copy_history[0];
         wallGetReposts(orig.from_id, orig.id, 0, 20, function (json) {
             var i = 0;
@@ -86,6 +92,8 @@
                     return o.r.from_id == repost.from_id && o.r.id == repost.id;
                 });
             if (rep_objects.length == 0) {
+//                console.log("Nothing found in first 20");
+                callback();
                 return; //todo do with async until or whilst
             }
 
@@ -94,8 +102,6 @@
 
             wallGetReposts(orig.from_id, orig.id, position, 1, function (json) {
                 var post = json.response.items[0];
-
-                $('#loading_img').addClass('nodisplay');
 
                 $('#result').append("<p>");
                 $('#result').append("<a href='" + genPostUrl(post) + "'>" + genPostUrl(post) + "</a><br/>");
@@ -112,6 +118,7 @@
                         $('#result').append("<a href='http://vk.com/id" + pr.id + "'>" + pr.first_name + " " + pr.last_name + "</a><br/>");
                     });
                 $('#result').append("</p>");
+                callback();
             });
         });
     }
