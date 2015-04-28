@@ -6,6 +6,7 @@
 
     function doWork() {
         beforeStart();
+        $('#loading_img').removeClass('nodisplay');
 
         var group_input = $('#group_id').val().trim();
         var reg0 = /^.*vk\.com\/(\w+)\/?/;
@@ -93,6 +94,9 @@
 
             wallGetReposts(orig.from_id, orig.id, position, 1, function (json) {
                 var post = json.response.items[0];
+
+                $('#loading_img').addClass('nodisplay');
+
                 $('#result').append("<p>");
                 $('#result').append("<a href='" + genPostUrl(post) + "'>" + genPostUrl(post) + "</a><br/>");
                 var owners = getOwners(post);

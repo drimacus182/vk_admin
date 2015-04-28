@@ -1,0 +1,7 @@
+.nodisplay {
+    display: none;
+}
+
+#loading_img {
+    width: 150px;
+}
