@@ -4,6 +4,12 @@
         $("#submit").on("click", doWork);
     });
 
+    $("#uid").on("keyup", function(event){
+        if(event.keyCode == 13){
+            $("#submit").click();
+        }
+    });
+
     function doWork() {
 
         var user_input = uid_from_text();
@@ -41,10 +47,14 @@
                     });
                     console.log(lengths);
 
+                    lengths = lengths.filter(function (d) {return d>=0});
+
                     wait.remove();
                     count_p.remove();
 
                     main.append("p").text("Медиана количества друзей у друзей :)- " + median(lengths));
+//                    drawChart(lengths.map(function(d) {return d > 1000 ? 1000 : d}));
+                    drawChart(lengths);
                 });
             });
         });
@@ -83,6 +93,24 @@
         function displayError() {
             d3.select("#main").append("p").text("Ошибка");
         }
+
+        function drawChart(arr) {
+            var h_data = arr.map(function (o) {
+                return ["", o];
+            });
+
+            h_data.unshift(['id', '']);
+            var data = google.visualization.arrayToDataTable(h_data);
+
+            var options = {
+                title: '',
+                legend: { position: 'none' }
+            };
+
+            var chart = new google.visualization.Histogram(document.getElementById('chart_div'));
+            chart.draw(data, options);
+        }
     }
 
 })();
+
