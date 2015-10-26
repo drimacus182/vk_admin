@@ -11,7 +11,6 @@
     });
 
     function doWork() {
-
         var user_input = uid_from_text();
 
         d3.select("#main").selectAll("*").remove();
@@ -36,7 +35,15 @@
                 var counter = 0;
                 async.mapLimit(friends, 7, function (uid, cb) {
                     vk("friends.get", {user_id: uid, name_case: "Nom"}, function (err, resp) {
-                        console.log("%d - %s", counter++, resp ? resp.length : err);
+//                        console.log("%d - %s", counter++, resp ? resp.length : err);
+                        if (err || !resp || !resp.length || resp.length < 1) {
+                            console.log("vk.com/id" + uid);
+                            console.log("response");
+                            console.log(resp);
+                            console.log("err");
+                            console.log(err);
+                        }
+                        counter++;
                         count_p.text(counter);
                         cb(null, resp);
                     });
@@ -53,8 +60,8 @@
                     count_p.remove();
 
                     main.append("p").text("Медиана количества друзей у друзей :)- " + median(lengths));
-//                    drawChart(lengths.map(function(d) {return d > 1000 ? 1000 : d}));
-                    drawChart(lengths);
+                    drawChart(lengths.map(function(d) {return d > 1000 ? 1000 : d}));
+                    //drawChart(lengths);
                 });
             });
         });
